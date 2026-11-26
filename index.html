@@ -30,6 +30,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--brand:#7c5cff;--brand2:#ff5ca8;--brandtx:#cdbfff;--acc:#ffd84d;--bg:#0b0a22;--sf:rgba(255,255,255,.065);--sf2:rgba(255,255,255,.045);--solid:#16143a;--side:rgba(8,7,28,.62);--ink:#f4f3ff;--mu:#aeabd2;--ln:rgba(255,255,255,.11);--soft:rgba(129,140,248,.2);--ok:#2ee6a6;--warn:#ffc53d;--bad:#ff6b8b;--sh:0 10px 34px rgba(0,0,0,.28);--r:20px;color-scheme:dark}
 [data-theme=violeta]{--bg:#240c55;--solid:#2a1670;--side:rgba(30,10,80,.55);--sf:rgba(255,255,255,.09);--sf2:rgba(255,255,255,.06);--soft:rgba(196,181,253,.22);--brandtx:#d8ceff}
@@ -881,12 +884,12 @@ const accessOk=()=>!!PROF&&(PROF.role==='admin'||(PROF.active&&(!PROF.expires_at
 async function loadProfile(){await ensureTok();const j=await sbf('/rest/v1/profiles?select=*&id=eq.'+SES.user.id);PROF=j&&j[0]||null;
  if(PROF){sbf('/rest/v1/rpc/touch_seen',{method:'POST',body:{}}).catch(()=>{})}return PROF}
 async function cloudPull(){if(!SES||!accessOk())return;await ensureTok();
- const j=await sbf('/rest/v1/user_data?select=data,updated_at&user_id=eq.'+SES.user.id);const row=j&&j[0];
+ const j=await sbf('/rest/v1/user_data?select=data,updated_at&user_id=eq.'+SES.user.id);const row=j&&j[0];if(row&&row.data&&row.data.conn&&row.data.conn.url&&row.data.conn.key&&(!ST.url||!ST.key)){ST.url=row.data.conn.url;ST.key=row.data.conn.key;saveCfg()}
  if(row&&row.data&&(row.data.expenses||row.data.events)){const rd=row.data;
   if(D.demo||(rd.updated||0)>(D.updated||0)){D={...newData(),...rd};try{migrateCats();applyLearn()}catch(e){}try{localStorage.setItem('vertex.data',JSON.stringify(D))}catch(e){}return true}
   if((rd.updated||0)<(D.updated||0))await cloudPush()}
  else if(!D.demo)await cloudPush();return false}
-async function cloudPush(){if(!SES||!accessOk()||D.demo)return;try{await ensureTok();
+async function cloudPush(){if(!SES||!accessOk()||D.demo)return;try{await ensureTok();if(ST.url&&ST.key)D.conn={url:ST.url,key:ST.key};
  await sbf('/rest/v1/user_data?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{user_id:SES.user.id,data:D,updated_at:new Date().toISOString()}});S.cloudAt=Date.now()}catch(e){console.warn('nube',e)}}
 function cloudSoon(){if(!SES||!PROF||D.demo)return;clearTimeout(cpT);cpT=setTimeout(cloudPush,2000)}
 async function enter(){await loadProfile();if(!PROF)throw new Error('No se encontró tu perfil. Escríbele al administrador.');
@@ -1038,7 +1041,7 @@ const A={
  'pw-eye'(t){const i=$('#lpass');if(i){i.type=i.type==='password'?'text':'password'}},
  'ai-save'(){ST.ai=$('[data-in=ai]').value.trim();saveCfg();toast('Clave guardada')},
  async 'ai-tips'(){const o=$('#aiout');o.textContent='Pensando…';try{const k=S.month;const r=await ai('Eres un asesor de finanzas personales en Perú. Responde en español, breve, con 4 consejos concretos. No calcules montos nuevos: usa solo los datos dados.',summaryText());o.innerHTML=`<div class="alert info"><div>${esc(r).replace(/\n/g,'<br>')}</div></div>`}catch(e){o.innerHTML=`<div class="alert bad"><div>${esc(e.message)}</div></div>`}},
- async 'con-save'(){ST.url=$('[data-in=url]').value.trim();ST.key=$('[data-in=key]').value.trim();saveCfg();try{await api('ping');await pull();toast('Conectado ✓');draw()}catch(e){toast('No conectó: '+e.message)}},
+ async 'con-save'(){ST.url=$('[data-in=url]').value.trim();ST.key=$('[data-in=key]').value.trim();saveCfg();if(ST.url&&ST.key){D.conn={url:ST.url,key:ST.key};save()}try{await api('ping');await pull();toast('Conectado ✓');draw()}catch(e){toast('No conectó: '+e.message)}},
  async 'con-scan'(){toast('Buscando correos…');try{const j=await scanMail();toast(`Listo: ${j.nuevos} gasto(s) nuevo(s)`+(j.otraMoneda?`, ${j.otraMoneda} en otra moneda`:''));draw()}catch(e){toast('Error: '+e.message)}},
  async 'con-sync'(){try{await push();toast('Sincronizado ✓')}catch(e){toast('Error: '+e.message)}},
  'show-gs'(){$('#modal').innerHTML=`<div class="mb" data-a="mclose"><div class="mbox" style="width:min(720px,100%)"><div class="mh"><h3>Conector de Google: guía y código</h3><button class="ib" data-a="mclose2">${ic('x')}</button></div><div class="mbody"><ol class="st"><li><div>Entra a <b>script.google.com</b> con tu cuenta de Gmail → <b>Nuevo proyecto</b> → ponle de nombre <span class="code">Vertex</span>.</div></li><li><div>Borra lo que aparece, pega el código de abajo y guarda (💾).</div></li><li><div>En <b>Configuración del proyecto → Propiedades del script</b> agrega <span class="code">PLATFORM_KEY</span> con una clave que inventes (la misma irá en Ajustes).</div></li><li><div>Arriba elige la función <span class="code">autorizar</span> → <b>Ejecutar</b> → acepta los permisos (Gmail solo lectura y Drive).</div></li><li><div><b>Implementar → Nueva implementación → Aplicación web</b>. Ejecutar como: <b>Yo</b>. Quién tiene acceso: <b>Cualquier persona</b>. Copia la URL.</div></li><li><div>Opcional: elige la función <span class="code">instalarAutomatico</span> y ejecútala una vez. Así revisa tus correos cada hora aunque Vertex esté cerrada.</div></li><li><div>Pega la URL y tu clave en Ajustes → <b>Guardar y probar</b>.</div></li></ol><div class="row" style="margin:14px 0 8px"><b style="flex:1">Código del conector</b><button class="btn s sm" data-a="copy-gs">Copiar código</button></div><textarea class="inp mono" id="gscode" readonly>${esc($('#gs-code').textContent.trim())}</textarea></div></div></div>`},
