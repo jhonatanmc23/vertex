@@ -33,6 +33,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--brand:#7c5cff;--brand2:#ff5ca8;--brandtx:#cdbfff;--acc:#ffd84d;--bg:#0b0a22;--sf:rgba(255,255,255,.065);--sf2:rgba(255,255,255,.045);--solid:#16143a;--side:rgba(8,7,28,.62);--ink:#f4f3ff;--mu:#aeabd2;--ln:rgba(255,255,255,.11);--soft:rgba(129,140,248,.2);--ok:#2ee6a6;--warn:#ffc53d;--bad:#ff6b8b;--sh:0 10px 34px rgba(0,0,0,.28);--r:20px;color-scheme:dark}
 [data-theme=violeta]{--bg:#240c55;--solid:#2a1670;--side:rgba(30,10,80,.55);--sf:rgba(255,255,255,.09);--sf2:rgba(255,255,255,.06);--soft:rgba(196,181,253,.22);--brandtx:#d8ceff}
@@ -567,8 +570,13 @@ Para actuar o consultar usa las herramientas. NUNCA calcules tú montos, porcent
 Consejos de ahorro: llama primero a get_summary y da 2 o 3 recomendaciones concretas según sus categorías y metas.
 Metas (laptop, carro, viaje…): si no dicen el precio, pregúntalo; luego plan_goal, cuenta en cuánto tiempo la logra con el escenario más realista y ofrece guardarla; si aceptan, add_goal.
 Medicinas: solo registras horarios, no das consejo médico. Después de ejecutar acciones confirma en una frase lo que hiciste.`;
-async function aiTools(messages){if(!ST.ai)throw new Error('Pon tu clave de IA en Ajustes');
- const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':ST.ai,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:700,system:SYS(),tools:TOOLS,messages})});
+const aiOn=()=>!!(ST.ai||(SES&&PROF&&accessOk()));
+async function aiPost(body){
+ if(SES&&PROF&&accessOk()){await ensureTok();return fetch(SB.url+'/functions/v1/ai-chat',{method:'POST',headers:{'content-type':'application/json',apikey:SB.key,Authorization:'Bearer '+SES.access_token},body:JSON.stringify(body)})}
+ if(!ST.ai)throw new Error('El asistente no está disponible');
+ return fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':ST.ai,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-5-5',...body})})}
+async function aiTools(messages){
+ const r=await aiPost({max_tokens:700,system:SYS(),tools:TOOLS,messages});
  const j=await r.json();if(!r.ok)throw new Error(j.error?.message||'La IA no respondió');return j}
 async function agent(text){const msgs=[...S.hist,{role:'user',content:text}];
  for(let n=0;n<6;n++){const j=await aiTools(msgs);msgs.push({role:'assistant',content:j.content});const uses=j.content.filter(c=>c.type==='tool_use');
@@ -692,14 +700,13 @@ function speak(txt,done){if(!S.v.speak||!('speechSynthesis' in window)){done();r
  speechSynthesis.cancel();vset('speak');let i=0;
  const next=()=>{if(my!==S.v.req)return;if(i>=parts.length){done();return}const u=new SpeechSynthesisUtterance(parts[i++].trim());u.lang='es-PE';if(vo)u.voice=vo;u.rate=1.02;u.onend=next;u.onerror=()=>{if(my===S.v.req)done()};speechSynthesis.speak(u)};next()}
 async function ask(text){const my=++S.v.req;S.chat.push({r:'u',h:esc(text)});S.v.interim='';vset('think');draw();
- let rep;try{rep=ST.ai?await agent(text):localAgent(text)}catch(e){rep='No pude responder: '+e.message}
+ let rep;try{rep=aiOn()?await agent(text):localAgent(text)}catch(e){rep='No pude responder: '+e.message}
  if(my!==S.v.req){draw();return}
  S.chat.push({r:'b',h:esc(rep)});draw();vset('think');
  speak(rep,()=>{if(S.v.on&&S.v.cont)vlisten();else{S.v.on=false;vset('idle')}})}
 
 async function ai(system,content,max=700){
- if(!ST.ai)throw new Error('Pon tu clave de IA en Ajustes');
- const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':ST.ai,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:max,system,messages:[{role:'user',content}]})});
+ const r=await aiPost({max_tokens:max,system,messages:[{role:'user',content}]});
  const j=await r.json();if(!r.ok)throw new Error(j.error?.message||'La IA no respondió');return j.content?.[0]?.text||''}
 const jsonOf=t=>{const m=t.match(/[\[{][\s\S]*[\]}]/);return m?JSON.parse(m[0]):null};
 const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f)});
@@ -805,7 +812,7 @@ function Asistente(){const v=S.v,st=v.st,L={idle:'Toca el círculo y habla',list
   <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap"><button class="chip sg" data-a="v-speak">🔊 Voz: ${v.speak?'Sí':'No'}</button><button class="chip sg" data-a="v-cont">🔁 Conversación continua: ${v.cont?'Sí':'No'}</button></div>
   <div class="row" style="justify-content:center;gap:8px;margin-top:6px"><button class="chip sg" data-a="teach">🧠 Enseñarle una categoría</button></div><div class="sub" style="font-size:12.5px;text-align:center">También puedes decirle: «Renzo Costa SAC es Ropa».</div>
   ${SR?'':'<div class="sub" style="font-size:13px">Este navegador no escucha por voz. Usa Chrome o Edge, o escribe abajo.</div>'}
-  ${ST.ai?'':`<div class="sub" style="font-size:13px">Sin clave de IA solo entiendo órdenes simples. <a href="#" data-a="al-go" data-t="ajustes" style="color:var(--brandtx);font-weight:700">Pon tu clave en Ajustes</a> para conversar con total libertad.</div>`}</div>
+  ${aiOn()?'':`<div class="sub" style="font-size:13px">Inicia sesión con una cuenta activa para conversar con total libertad.</div>`}</div>
  <div class="card pad"><div class="chat" id="chat">${S.chat.length?S.chat.map(m=>m.r==='a'?`<div class="msg a">${m.h}${m.u?` <button class="chip sg" data-a="undo" data-u="${m.u}">Deshacer</button>`:''}</div>`:`<div class="msg ${m.r}">${m.h}</div>`).join(''):`<div class="msg b">Hola${ST.user?' '+esc(ST.user):''} 👋 Soy tu asistente. Puedes pedirme cosas como:</div><div class="sugs" style="margin-top:2px">${EJ.map(x=>`<button type="button" class="chip sg" data-a="chat-ex" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>`}</div>
  <form data-f="chat" class="row" style="margin-top:12px"><input class="inp" name="t" placeholder="…o escribe aquí" style="flex:1" autocomplete="off"><button class="btn p">Enviar</button></form></div></div>`}
 
@@ -849,7 +856,7 @@ function Ajustes(){const con=ST.url&&ST.key,info=D.scanInfo;
  <div class="grid g2" style="align-items:start"><div><div class="sh">Categorías que aprendí</div><div class="card pad"><p class="sub" style="margin-bottom:10px">Cuando registras o corriges un gasto, recuerdo en qué categoría va. Aquí puedes revisarlas.</p>${Object.keys(D.learn||{}).length?`<div style="display:flex;flex-wrap:wrap;gap:8px">${Object.entries(D.learn).map(([k,v])=>`<span class="chip br" style="gap:6px">${esc(k)} → ${v} <button class="ib" style="width:22px;height:22px" data-a="learn-del" data-k="${esc(k)}" aria-label="Olvidar ${esc(k)}">${ic('x')}</button></span>`).join('')}</div>`:'<div class="sub">Aún no he aprendido nada. Dile al Asistente "almuerzo es alimentación".</div>'}<div class="row" style="margin-top:12px"><button class="btn s sm" data-a="learn-add">${ic('plus')} Agregar regla</button></div></div>
  <div class="sh">Cuenta y seguridad</div><div class="card pad"><div class="row" style="flex-wrap:wrap"><div style="flex:1 1 200px"><b>${esc(PROF?PROF.email:(ST.user||'—'))}</b><div class="sub" style="font-size:13px">${PROF?stOf(PROF)[0]+' · tus datos se guardan en la nube y se sincronizan entre tus dispositivos.':''} Se pide la contraseña al abrir y tras 5 minutos sin usar.</div></div><button class="btn s" data-a="chg-pass">Cambiar contraseña</button><button class="btn g" data-a="logout">${ic('lock')} Cerrar sesión</button>${PROF&&PROF.role==='admin'?'<button class="btn p" data-a="go-admin">👑 Administrar usuarios</button>':''}</div></div>
  <div class="sh" style="margin-top:18px">Apariencia</div><div class="card pad"><div class="seg" style="margin:0">${[['noche','🌙 Noche'],['violeta','💜 Violeta']].map(([a,b])=>`<button class="${ST.theme===a?'on':''}" data-a="theme" data-v="${a}">${b}</button>`).join('')}</div></div></div>
- <div><div class="sh">Asistente con IA (opcional)</div><div class="card pad"><div class="fg"><label class="f">Tu clave de Anthropic (empieza con sk-ant-)</label><input class="inp" type="password" data-in="ai" value="${esc(ST.ai)}" placeholder="sk-ant-…"></div><div class="row"><button class="btn p" data-a="ai-save">Guardar</button></div><p class="sub" style="margin-top:10px;font-size:13px">Se guarda solo en este navegador. Costo muy bajo: unos US$ 0.10 por millón de entrada y US$ 0.50 por millón de salida.</p></div>
+ <div><div class="sh">Asistente con IA</div>${SES&&PROF&&accessOk()?'<div class="card pad"><div class="row"><b style="flex:1">Incluido en tu suscripción</b><span class="chip ok">Listo</span></div><p class="sub" style="margin-top:8px;font-size:13.5px">El asistente con IA ya funciona, sin que configures nada. Háblale o escríbele desde la pestaña IA.</p></div>':`<div class="card pad"><div class="fg"><label class="f">Tu clave de Anthropic (empieza con sk-ant-)</label><input class="inp" type="password" data-in="ai" value="${esc(ST.ai)}" placeholder="sk-ant-…"></div><div class="row"><button class="btn p" data-a="ai-save">Guardar</button></div><p class="sub" style="margin-top:10px;font-size:13px">Se guarda solo en este navegador. Costo muy bajo: unos US$ 0.10 por millón de entrada y US$ 0.50 por millón de salida.</p></div>`}
 <div class="sh" style="margin-top:18px">Respaldo</div><div class="card pad"><div class="row"><button class="btn s" data-a="exp">Descargar respaldo</button><label class="btn g" style="cursor:pointer">Restaurar respaldo<input type="file" accept=".json" data-f2="imp" hidden></label><button class="btn s" data-a="demo-on">Cargar ejemplos</button><button class="btn d" data-a="wipe">Borrar todo</button></div></div></div></div>
  <div class="about">${ALTCR(210)}<p>Vertex · Centro de control diario</p></div>`}
 
