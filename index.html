@@ -1163,6 +1163,7 @@ function PushCard(){if(!SES)return'';const pf=(D.notify&&D.notify.pf)||{},ck=k=>
  <label class="row" style="gap:10px;padding:6px 0;cursor:pointer"><input type="checkbox" data-a="av-names" ${D.notify&&D.notify.medNames?'checked':''}><span style="flex:1;font-size:14px">Mostrar el nombre de la medicina en el aviso</span></label></div>`}
 function Ajustes(){const con=ST.url&&ST.key,info=D.scanInfo;
  return`${Banner('ajustes','Ajustes','Conexión, seguridad y respaldo',``)}
+ ${GmailCard()}
  ${(!PROF||PROF.role==='admin')?`<div class="sh">Correos del banco (automático)</div>
  <div class="card pad"><div class="row" style="margin-bottom:10px"><b style="flex:1">Conector de Google (gratis)</b><span class="chip ${con?'ok':''}">${con?'Conectado':'Sin conectar'}</span></div>
  <p class="sub" style="margin-bottom:12px">Lee solo correos de BCP, BBVA y Yape y los registra como gastos, incluso con Vertex cerrada. También guarda tus datos en tu Google Drive para que los veas en cualquier equipo.</p>
@@ -1232,6 +1233,7 @@ async function enter(){await loadProfile();if(!PROF)throw new Error('No se encon
  try{localStorage.setItem('vertex.uid',uid)}catch(e){}
  ST.user=PROF.name||PROF.email;saveCfg();S.blocked=!accessOk();pushRefresh();
  if(!S.blocked){try{await cloudPull()}catch(e){console.warn(e)}}
+ if(!S.blocked){await gmSt();await gmPull();try{const q=new URLSearchParams(location.search).get('gmail');if(q){history.replaceState(null,'',location.pathname);setTimeout(()=>toast(q==='ok'?'Gmail conectado ✓ Ya estamos buscando tus gastos':q==='cancelado'?'No se conectó Gmail':'No se pudo conectar Gmail. Inténtalo de nuevo'),600);if(q==='ok')gmPull()}}catch(e){}}
  try{localStorage.setItem('vertex.data',JSON.stringify(D))}catch(e){}}
 async function doAuth(f){const mode=S.lm||'in',email=(f.email.value||'').trim().toLowerCase(),pass=f.pass?f.pass.value:'';S.lockUser=email;S.lockMsg='';S.lockErr='';
  const bt=f.querySelector('.lbtn');if(bt){bt.disabled=true;bt.textContent='Un momento…'}
@@ -1248,6 +1250,22 @@ async function doLogout(){try{await sbf('/auth/v1/logout',{method:'POST'})}catch
 const addDays=(iso,n)=>{const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 async function loadUsers(){try{await ensureTok();S.users=await sbf('/rest/v1/profiles?select=*&order=created_at.desc')}catch(e){S.users=[];toast(errEs(e))}}
 async function patchUser(id,body){await ensureTok();await sbf('/rest/v1/profiles?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body})}
+async function gmSt(){try{await ensureTok();S.gm=await sbf('/rest/v1/rpc/gmail_status',{method:'POST',body:{}})}catch(e){S.gm={connected:false}}}
+async function gmCall(body){await ensureTok();const r=await fetch(SB.url+'/functions/v1/gmail-oauth',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB.key,Authorization:'Bearer '+SES.access_token},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok||j.error)throw new Error(j.error||'Error '+r.status);return j}
+async function gmPull(){if(!SES||!PROF||!accessOk())return 0;try{await ensureTok();const rows=await sbf('/rest/v1/gmail_inbox?select=id,msg_id,bank,merchant,amount,date,cat&order=created_at.asc');if(!rows||!rows.length)return 0;
+ D.deleted=D.deleted||[];const have=new Set((D.expenses||[]).map(e=>e.id));let n=0;
+ rows.forEach(r=>{const id='g'+r.msg_id;if(have.has(id)||D.deleted.includes(id))return;D.expenses.unshift({id,cat:r.cat||'Otros',name:r.merchant,amount:+r.amount,date:r.date,src:r.bank});have.add(id);n++});
+ await sbf('/rest/v1/gmail_inbox?id=in.('+rows.map(r=>r.id).join(',')+')',{method:'DELETE',headers:{Prefer:'return=minimal'}});
+ if(n){D.updated=Date.now();save();draw(true)}return n}catch(e){console.warn(e);return 0}}
+function GmailCard(){if(!SES||!PROF)return'';const g=S.gm;
+ if(!g)return`<div class="sh">Correos del banco (automático)</div><div class="card pad"><b>Gmail</b><div class="sub">Cargando…</div></div>`;
+ if(!accessOk())return'';
+ const ok=g.connected;
+ return`<div class="sh">Correos del banco (automático)</div><div class="card pad"><div class="row" style="margin-bottom:10px"><b style="flex:1">Gastos desde tu Gmail</b><span class="chip ${ok?'ok':''}">${ok?'Conectado':'Sin conectar'}</span></div>
+ <p class="sub" style="margin-bottom:12px">Vertex lee <b>solo</b> los correos de BCP, BBVA y Yape y los anota como gastos, aunque tengas la app cerrada. No envía, borra ni modifica nada. Puedes desconectarte cuando quieras.</p>
+ ${ok?`<div class="sub" style="margin-bottom:12px;font-size:13px">Cuenta: <b>${esc(g.email||'')}</b>${g.last_scan?' · Última revisión: '+new Date(g.last_scan).toLocaleString('es-PE'):''}${g.error?`<br><span style="color:#ff7a90">${esc(g.error)}</span>`:''}</div><div class="row"><button class="btn p" data-a="gm-scan">Buscar correos ahora</button><button class="btn g" data-a="gm-off">Desconectar</button></div>`
+ :`<div class="sub" style="margin-bottom:12px;font-size:13px">Verás un aviso de Google que dice <b>"Google no verificó esta app"</b>. Es normal: toca <b>Avanzado</b> y luego <b>Ir a Vertex (no seguro)</b>, y acepta el permiso de solo lectura.</div><button class="btn p" data-a="gm-conn">Conectar con Google</button>`}
+ <p class="sub" style="margin-top:12px;font-size:12.5px"><a class="lnk" href="privacidad.html" target="_blank" rel="noopener">Política de privacidad</a> · <a class="lnk" href="terminos.html" target="_blank" rel="noopener">Términos</a></p></div>`}
 async function admCall(body){await ensureTok();const r=await fetch(SB.url+'/functions/v1/admin-users',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB.key,Authorization:'Bearer '+SES.access_token},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok||j.error)throw new Error(j.error||'Error '+r.status);return j}
 function stOf(u){if(u.role==='admin')return['Administrador','ok'];if(!u.active)return['Pendiente de activar','warn'];if(u.expires_at&&u.expires_at<today())return['Vencido','bad'];return['Activo'+(u.expires_at?' hasta '+fmtDate(u.expires_at):''),'ok']}
 function Admin(){const us=S.users;if(!PROF||PROF.role!=='admin')return'<div class="card pad">Sin acceso.</div>';
@@ -1359,6 +1377,9 @@ const A={
   try{await patchUser(u.id,{active:true,expires_at:addDays(base,30)});toast('Activado hasta '+fmtDate(addDays(base,30))+' ✓');await loadUsers();draw()}catch(e){toast(errEs(e))}},
  async 'adm-off'(t){const u=(S.users||[]).find(x=>x.id===t.dataset.id);if(!u||!confirm('¿Desactivar a '+u.email+'? No podrá entrar hasta que lo actives de nuevo.'))return;
   try{await patchUser(u.id,{active:false});toast('Cuenta desactivada');await loadUsers();draw()}catch(e){toast(errEs(e))}},
+ async 'gm-conn'(){try{toast('Abriendo Google…');const j=await gmCall({action:'start'});location.href=j.url}catch(e){toast(e.message)}},
+ async 'gm-scan'(){try{toast('Buscando correos…');const j=await gmCall({action:'scan'});if(j.ok===false)throw new Error(j.error);const n=await gmPull();await gmSt();toast(n?`Listo: ${n} gasto(s) nuevo(s)`:'Listo: no hay gastos nuevos'+(j.otraMoneda?` (${j.otraMoneda} en otra moneda)`:''));draw()}catch(e){toast(e.message)}},
+ async 'gm-off'(){if(!confirm('¿Desconectar tu Gmail? Los gastos ya anotados se conservan.'))return;try{await gmCall({action:'disconnect'});S.gm={connected:false};toast('Gmail desconectado');draw()}catch(e){toast(e.message)}},
  'adm-new'(){form('Crear usuario',[{n:'name',l:'Nombre',ph:'Nombre del cliente'},{n:'email',l:'Correo',t:'email',req:1},{n:'pw',l:'Contraseña (mín. 6 caracteres)',req:1,ph:'La que le vas a entregar'},{n:'days',l:'Días de acceso (0 = sin activar)',t:'number',v:30,half:1},{n:'role',l:'Tipo',t:'select',o:[['user','Cliente'],['admin','Administrador']],v:'user',half:1},{n:'note',l:'Nota (pago, teléfono…)'}],async o=>{try{await admCall({action:'create',email:o.email,name:o.name,password:o.pw,days:+o.days||0,role:o.role,note:o.note});toast('Usuario creado ✓ Entrégale correo y clave');await loadUsers();draw()}catch(e){toast(e.message)}},'Crear')},
  'adm-pass'(t){const u=(S.users||[]).find(x=>x.id===t.dataset.id);if(!u)return;form('Nueva clave para '+u.email,[{n:'pw',l:'Nueva contraseña (mín. 6 caracteres)',req:1}],async o=>{try{await admCall({action:'setpass',id:u.id,password:o.pw});toast('Clave cambiada ✓')}catch(e){toast(e.message)}},'Cambiar')},
  async 'adm-role'(t){const u=(S.users||[]).find(x=>x.id===t.dataset.id);if(!u)return;const to=u.role==='admin'?'user':'admin';if(!confirm((to==='admin'?'¿Dar permisos de administrador a ':'¿Quitar permisos de administrador a ')+u.email+'?'))return;try{await admCall({action:'setrole',id:u.id,role:to});toast('Rol actualizado ✓');await loadUsers();draw()}catch(e){toast(e.message)}},
@@ -1423,7 +1444,7 @@ setInterval(tick,30000);
 setInterval(()=>{if(!S.locked&&Date.now()-S.lastActive>5*60*1000){S.locked=true;S.lockErr='';draw()}},15000);
 addEventListener('keydown',e=>{if(S.locked)return;const tg=e.target.tagName;if(e.key==='Escape'&&$('#modal').innerHTML){closeM();return}if(/INPUT|TEXTAREA|SELECT/.test(tg)||e.ctrlKey||e.metaKey||e.altKey||$('#modal').innerHTML)return;if(e.key==='n'||e.key==='N'){e.preventDefault();A['add-exp']()}});
 ['pointerdown','keydown','scroll'].forEach(ev=>addEventListener(ev,()=>{S.lastActive=Date.now()},{passive:true}));
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!S.locked&&SES&&PROF&&!S.blocked)cloudPull().then(ch=>{if(ch)draw(true)}).catch(()=>{});if(document.visibilityState==='visible'&&!S.locked&&ST.url&&ST.key)pull().then(()=>draw(true)).catch(()=>{})});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!S.locked&&SES&&PROF&&!S.blocked)cloudPull().then(ch=>{if(ch)draw(true)}).catch(()=>{}).then(()=>gmPull());if(document.visibilityState==='visible'&&!S.locked&&ST.url&&ST.key)pull().then(()=>draw(true)).catch(()=>{})});
 draw();
 </script>
 <script type="text/plain" id="gs-code">
