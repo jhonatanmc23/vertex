@@ -1036,8 +1036,9 @@ function vlisten(){if(!SR){toast('Este navegador no escucha por voz. Usa Chrome 
  try{r.start()}catch(e){S.v.on=false;vset('idle')}}
 const sayable=t=>strip(t).replace(/S\/\s?([\d.,]+)/g,(m,x)=>{const v=parseFloat(x.replace(/,/g,''));return v%1===0?`${Math.round(v)} soles`:`${Math.floor(v)} soles con ${Math.round(v%1*100)}`}).replace(/[*_#`~]/g,'').replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu,'').trim();
 /* voz: Gemini (natural) y, si falla, la voz del celular */
-const AU=new Audio();AU.preload='auto';let auOk=false;
-function unlockAudio(){if(auOk)return;auOk=true;try{AU.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';const p=AU.play();if(p&&p.catch)p.catch(()=>{auOk=false})}catch(e){auOk=false}
+const AU=new Audio();AU.preload='auto';AU.setAttribute('playsinline','');AU.volume=1;let auOk=false;
+const auSess=()=>{try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}};auSess();
+function unlockAudio(){auSess();if(auOk)return;auOk=true;try{AU.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';const p=AU.play();if(p&&p.catch)p.catch(()=>{auOk=false})}catch(e){auOk=false}
  try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
 ['click','touchend'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 async function ttsGet(text){if(!(SES&&PROF&&accessOk()))return null;const r=await aiPost({tts:text});const j=await r.json().catch(()=>({}));return r.ok&&j.audio?'data:'+(j.mime||'audio/wav')+';base64,'+j.audio:null}
@@ -1054,7 +1055,7 @@ async function speak(txt,done){if(!S.v.speak){done();return}
  if(say.length>450){const k=say.lastIndexOf('.',450);say=say.slice(0,k>150?k+1:450)}
  vset('think');let src=null;try{src=await ttsGet(say)}catch(e){}
  if(my!==S.v.req)return;
- if(src){AU.onended=()=>{if(my===S.v.req)done()};AU.onerror=()=>{if(my===S.v.req)speakLocal(txt,done,my)};AU.src=src;vset('speak');try{await AU.play();return}catch(e){AU.onended=null;AU.onerror=null}}
+ if(src){AU.onended=()=>{if(my===S.v.req)done()};AU.onerror=()=>{if(my===S.v.req)speakLocal(txt,done,my)};AU.src=src;auSess();vset('speak');try{await AU.play();return}catch(e){AU.onended=null;AU.onerror=null;auOk=false;toast('Toca la pantalla una vez para activar el sonido')}}
  speakLocal(txt,done,my)}
 async function ask(text){const my=++S.v.req;S.chat.push({r:'u',h:esc(text)});S.v.interim='';vset('think');draw();
  let rep;try{rep=aiOn()?await agent(text):localAgent(text)}catch(e){rep='No pude responder: '+e.message}
