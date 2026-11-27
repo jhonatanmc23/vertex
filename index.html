@@ -1021,7 +1021,7 @@ function localAgent(t){const n=norm(t),low=t.toLowerCase();
 function vui(){const o=$('#orb');if(!o)return;const L={idle:'Toca el círculo y habla',listen:'Te escucho…',think:'Pensando…',speak:'Hablando… (toca para interrumpir)'};o.dataset.st=S.v.st;const a=$('#vstat'),b=$('#vtr');if(a)a.textContent=L[S.v.st];if(b)b.textContent=S.v.interim||''}
 function vset(st){S.v.st=st;vui()}
 let REC=null;
-function vstop(){S.v.on=false;S.v.req++;try{REC&&REC.abort()}catch(e){}REC=null;try{speechSynthesis.cancel()}catch(e){}S.v.interim='';vset('idle')}
+function vstop(){S.v.on=false;S.v.req++;try{REC&&REC.abort()}catch(e){}REC=null;try{speechSynthesis.cancel()}catch(e){}try{AU.onended=null;AU.onerror=null;AU.pause()}catch(e){}S.v.interim='';vset('idle')}
 function vlisten(){if(!SR){toast('Este navegador no escucha por voz. Usa Chrome o Edge, o escribe.');S.v.on=false;vset('idle');return}
  try{speechSynthesis.cancel()}catch(e){}
  const r=new SR();REC=r;r.lang='es-PE';r.interimResults=true;r.continuous=false;let fin='',err='';
@@ -1035,11 +1035,27 @@ function vlisten(){if(!SR){toast('Este navegador no escucha por voz. Usa Chrome 
   else{S.v.on=false;vset('idle')}};
  try{r.start()}catch(e){S.v.on=false;vset('idle')}}
 const sayable=t=>strip(t).replace(/S\/\s?([\d.,]+)/g,(m,x)=>{const v=parseFloat(x.replace(/,/g,''));return v%1===0?`${Math.round(v)} soles`:`${Math.floor(v)} soles con ${Math.round(v%1*100)}`}).replace(/[*_#`~]/g,'').replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu,'').trim();
-function speak(txt,done){if(!S.v.speak||!('speechSynthesis' in window)){done();return}
- const vs=speechSynthesis.getVoices(),vo=vs.find(v=>/^es[-_](PE|MX|US|419)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang)),my=S.v.req;
+/* voz: Gemini (natural) y, si falla, la voz del celular */
+const AU=new Audio();AU.preload='auto';let auOk=false;
+function unlockAudio(){if(auOk)return;auOk=true;try{AU.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';const p=AU.play();if(p&&p.catch)p.catch(()=>{auOk=false})}catch(e){auOk=false}
+ try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
+['click','touchend'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+async function ttsGet(text){if(!(SES&&PROF&&accessOk()))return null;const r=await aiPost({tts:text});const j=await r.json().catch(()=>({}));return r.ok&&j.audio?'data:'+(j.mime||'audio/wav')+';base64,'+j.audio:null}
+function bestVoice(){const vs=speechSynthesis.getVoices().filter(v=>/^es/i.test(v.lang));const pref=[/premium|enhanced|natural|neural/i,/paulina|m[oó]nica|juan|jorge|diego|google/i];
+ for(const re of pref){const x=vs.find(v=>re.test(v.name)&&/^es[-_](PE|MX|US|419)/i.test(v.lang))||vs.find(v=>re.test(v.name));if(x)return x}
+ return vs.find(v=>/^es[-_](PE|MX|US|419)/i.test(v.lang))||vs[0]}
+function speakLocal(txt,done,my){if(!('speechSynthesis' in window)){done();return}
+ const vo=bestVoice();
  const parts=sayable(txt).match(/[^.!?¿]+[.!?]*/g)||[];if(!parts.length){done();return}
  speechSynthesis.cancel();vset('speak');let i=0;
- const next=()=>{if(my!==S.v.req)return;if(i>=parts.length){done();return}const u=new SpeechSynthesisUtterance(parts[i++].trim());u.lang='es-PE';if(vo)u.voice=vo;u.rate=1.02;u.onend=next;u.onerror=()=>{if(my===S.v.req)done()};speechSynthesis.speak(u)};next()}
+ const next=()=>{if(my!==S.v.req)return;if(i>=parts.length){done();return}const u=new SpeechSynthesisUtterance(parts[i++].trim());u.lang=vo?vo.lang:'es-MX';if(vo)u.voice=vo;u.rate=0.98;u.onend=next;u.onerror=()=>{if(my===S.v.req)done()};speechSynthesis.speak(u)};next()}
+async function speak(txt,done){if(!S.v.speak){done();return}
+ const my=S.v.req;let say=sayable(txt);if(!say){done();return}
+ if(say.length>450){const k=say.lastIndexOf('.',450);say=say.slice(0,k>150?k+1:450)}
+ vset('think');let src=null;try{src=await ttsGet(say)}catch(e){}
+ if(my!==S.v.req)return;
+ if(src){AU.onended=()=>{if(my===S.v.req)done()};AU.onerror=()=>{if(my===S.v.req)speakLocal(txt,done,my)};AU.src=src;vset('speak');try{await AU.play();return}catch(e){AU.onended=null;AU.onerror=null}}
+ speakLocal(txt,done,my)}
 async function ask(text){const my=++S.v.req;S.chat.push({r:'u',h:esc(text)});S.v.interim='';vset('think');draw();
  let rep;try{rep=aiOn()?await agent(text):localAgent(text)}catch(e){rep='No pude responder: '+e.message}
  if(my!==S.v.req){draw();return}
@@ -1361,7 +1377,7 @@ const A={
  'av-names'(t){D.notify={...D.notify,medNames:t.checked};save()},
  async 'av-test'(){try{const r=await fetch('https://ntfy.sh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:D.notify.topic,title:'✅ Vertex',message:'Los avisos funcionan, incluso con Vertex cerrada.',priority:4,tags:['bell']})});toast(r.ok?'Aviso enviado: revisa tu celular':'No se pudo enviar ('+r.status+')')}catch(e){toast('Sin conexión con ntfy')}},
  'orb'(){if(S.v.on||S.v.st!=='idle'){vstop();return}S.v.on=true;S.v.idle=0;vlisten()},
- 'v-speak'(){S.v.speak=!S.v.speak;if(!S.v.speak)try{speechSynthesis.cancel()}catch(e){}draw()},
+ 'v-speak'(){S.v.speak=!S.v.speak;if(!S.v.speak){try{speechSynthesis.cancel()}catch(e){}try{AU.onended=null;AU.pause()}catch(e){}}draw()},
  'v-cont'(){S.v.cont=!S.v.cont;draw()},
  'undo'(t){const f=S.undo[t.dataset.u];if(!f)return;f();save();delete S.undo[t.dataset.u];const m=S.chat.find(x=>x.u===t.dataset.u);if(m){m.h=m.h.replace('✓','↩ Deshecho:');m.u=''}draw();toast('Deshecho')},
  'chat-ex'(t){ask(t.dataset.v)},
