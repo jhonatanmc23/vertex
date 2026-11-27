@@ -1165,7 +1165,7 @@ function PushCard(){if(!SES)return'';const pf=(D.notify&&D.notify.pf)||{},ck=k=>
 function Ajustes(){const con=ST.url&&ST.key,info=D.scanInfo;
  return`${Banner('ajustes','Ajustes','Conexión, seguridad y respaldo',``)}
  ${GmailCard()}
- ${(!PROF||PROF.role==='admin')?`<div class="sh">Correos del banco (automático)</div>
+ ${!SES?`<div class="sh">Correos del banco (automático)</div>
  <div class="card pad"><div class="row" style="margin-bottom:10px"><b style="flex:1">Conector de Google (gratis)</b><span class="chip ${con?'ok':''}">${con?'Conectado':'Sin conectar'}</span></div>
  <p class="sub" style="margin-bottom:12px">Lee solo correos de BCP, BBVA y Yape y los registra como gastos, incluso con Vertex cerrada. También guarda tus datos en tu Google Drive para que los veas en cualquier equipo.</p>
  <div class="fg"><label class="f">URL de la aplicación web (Apps Script)</label><input class="inp" data-in="url" value="${esc(ST.url)}" placeholder="https://script.google.com/macros/s/…/exec"></div>
