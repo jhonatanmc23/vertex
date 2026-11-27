@@ -1021,7 +1021,7 @@ function localAgent(t){const n=norm(t),low=t.toLowerCase();
 function vui(){const o=$('#orb');if(!o)return;const L={idle:'Toca el círculo y habla',listen:'Te escucho…',think:'Pensando…',speak:'Hablando… (toca para interrumpir)'};o.dataset.st=S.v.st;const a=$('#vstat'),b=$('#vtr');if(a)a.textContent=L[S.v.st];if(b)b.textContent=S.v.interim||''}
 function vset(st){S.v.st=st;vui()}
 let REC=null;
-function vstop(){S.v.on=false;S.v.req++;try{REC&&REC.abort()}catch(e){}REC=null;try{speechSynthesis.cancel()}catch(e){}try{AU.onended=null;AU.onerror=null;AU.pause()}catch(e){}S.v.interim='';vset('idle')}
+function vstop(){S.v.on=false;S.v.req++;try{REC&&REC.abort()}catch(e){}REC=null;try{speechSynthesis.cancel()}catch(e){}try{AU.onended=null;AU.onerror=null;AU.pause()}catch(e){}try{if(CUR){CUR.onended=null;CUR.stop()}}catch(e){}CUR=null;S.v.interim='';vset('idle')}
 function vlisten(){if(!SR){toast('Este navegador no escucha por voz. Usa Chrome o Edge, o escribe.');S.v.on=false;vset('idle');return}
  try{speechSynthesis.cancel()}catch(e){}
  const r=new SR();REC=r;r.lang='es-PE';r.interimResults=true;r.continuous=false;let fin='',err='';
@@ -1038,7 +1038,14 @@ const sayable=t=>strip(t).replace(/S\/\s?([\d.,]+)/g,(m,x)=>{const v=parseFloat(
 /* voz: Gemini (natural) y, si falla, la voz del celular */
 const AU=new Audio();AU.preload='auto';AU.setAttribute('playsinline','');AU.volume=1;let auOk=false;
 const auSess=()=>{try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}};auSess();
-function unlockAudio(){auSess();if(auOk)return;auOk=true;try{AU.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';const p=AU.play();if(p&&p.catch)p.catch(()=>{auOk=false})}catch(e){auOk=false}
+let ACX=null,CUR=null;
+const acx=()=>{if(!ACX){try{ACX=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return ACX};
+const dbg=m=>{S.v.dbg=(S.v.dbg?S.v.dbg+' · ':'')+m;const e=document.getElementById('vdbg');if(e)e.textContent=S.v.dbg};
+async function playWA(src,my,done){const c=acx();if(!c)throw new Error('sin WebAudio');try{await c.resume()}catch(e){}if(c.state!=='running')throw new Error('audio '+c.state);
+ const ab=await(await fetch(src)).arrayBuffer();const buf=await new Promise((ok,no)=>c.decodeAudioData(ab,ok,no));
+ const sn=c.createBufferSource();sn.buffer=buf;sn.connect(c.destination);CUR=sn;sn.onended=()=>{if(CUR===sn){CUR=null;if(my===S.v.req)done()}};vset('speak');sn.start(0)}
+function unlockAudio(){auSess();try{const c=acx();if(c){c.resume();const b=c.createBuffer(1,1,22050),x=c.createBufferSource();x.buffer=b;x.connect(c.destination);x.start(0)}}catch(e){}
+ if(auOk)return;auOk=true;try{AU.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';const p=AU.play();if(p&&p.catch)p.catch(()=>{auOk=false})}catch(e){auOk=false}
  try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
 ['click','touchend'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 async function ttsGet(text){if(!(SES&&PROF&&accessOk()))return null;const r=await aiPost({tts:text});const j=await r.json().catch(()=>({}));return r.ok&&j.audio?'data:'+(j.mime||'audio/wav')+';base64,'+j.audio:null}
@@ -1053,10 +1060,18 @@ function speakLocal(txt,done,my){if(!('speechSynthesis' in window)){done();retur
 async function speak(txt,done){if(!S.v.speak){done();return}
  const my=S.v.req;let say=sayable(txt);if(!say){done();return}
  if(say.length>450){const k=say.lastIndexOf('.',450);say=say.slice(0,k>150?k+1:450)}
- vset('think');let src=null;try{src=await ttsGet(say)}catch(e){}
+ S.v.dbg='';vset('think');let src=null;try{src=await ttsGet(say)}catch(e){dbg('voz Gemini: error')}
  if(my!==S.v.req)return;
- if(src){AU.onended=()=>{if(my===S.v.req)done()};AU.onerror=()=>{if(my===S.v.req)speakLocal(txt,done,my)};AU.src=src;auSess();vset('speak');try{await AU.play();return}catch(e){AU.onended=null;AU.onerror=null;auOk=false;toast('Toca la pantalla una vez para activar el sonido')}}
+ if(src){dbg('voz Gemini lista');try{await playWA(src,my,done);dbg('sonando (A)');return}catch(e){dbg('A falló: '+(e&&e.message||e))}
+  AU.onended=()=>{if(my===S.v.req)done()};AU.onerror=()=>{if(my===S.v.req)speakLocal(txt,done,my)};AU.src=src;auSess();vset('speak');
+  try{await AU.play();dbg('sonando (B)');return}catch(e){AU.onended=null;AU.onerror=null;auOk=false;dbg('B falló: '+(e&&e.name||e));toast('Toca la pantalla una vez para activar el sonido')}}
+ else dbg('sin voz Gemini, uso la del celular');
  speakLocal(txt,done,my)}
+async function vtest(){unlockAudio();S.v.dbg='';dbg('audioSession: '+((navigator.audioSession&&navigator.audioSession.type)||'no existe'));
+ let src=null;try{src=await ttsGet('Hola, soy Vertex, tu asistente. ¿Me escuchas bien?')}catch(e){}
+ if(!src){dbg('el servidor no generó la voz');speakLocal('Hola, soy Vertex, tu asistente. ¿Me escuchas bien?',()=>{},S.v.req);return}
+ dbg('voz Gemini lista');try{await playWA(src,S.v.req,()=>{});dbg('A reproduce');return}catch(e){dbg('A falló: '+(e&&e.message||e))}
+ AU.src=src;try{await AU.play();dbg('B reproduce')}catch(e){dbg('B falló: '+(e&&e.name||e))}}
 async function ask(text){const my=++S.v.req;S.chat.push({r:'u',h:esc(text)});S.v.interim='';vset('think');draw();
  let rep;try{rep=aiOn()?await agent(text):localAgent(text)}catch(e){rep='No pude responder: '+e.message}
  if(my!==S.v.req){draw();return}
@@ -1071,7 +1086,7 @@ const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(S
 
 /* ============ estado de pantalla ============ */
 const TABS=[['inicio','home','Inicio'],['gastos','pie','Gastos'],['metas','goal','Metas'],['agenda','cal','Agenda'],['pagos','card','Pagos'],['salud','med','Salud']];
-let S={tab:'inicio',sub:{gastos:'resumen',agenda:'lista',pagos:'servicios',asistente:'escribir'},month:ym(today()),calDay:today(),q:'',sf:'',locked:true,lockErr:'',lockUser:'',lastActive:Date.now(),chat:[],pend:null,hist:[],undo:{},v:{on:false,st:'idle',interim:'',speak:true,cont:true,idle:0,err:'',req:0}};
+let S={tab:'inicio',sub:{gastos:'resumen',agenda:'lista',pagos:'servicios',asistente:'escribir'},month:ym(today()),calDay:today(),q:'',sf:'',locked:true,lockErr:'',lockUser:'',lastActive:Date.now(),chat:[],pend:null,hist:[],undo:{},v:{on:false,st:'idle',interim:'',speak:true,cont:true,idle:0,err:'',req:0,dbg:''}};
 const NAV=[...TABS,['asistente','spark','Asistente'],['ajustes','gear','Ajustes']];
 const NCOL={inicio:'linear-gradient(135deg,#7c5cff,#ff5ca8)',gastos:'linear-gradient(135deg,#6d4aff,#22d3ee)',metas:'linear-gradient(135deg,#10b981,#2ee6a6)',agenda:'linear-gradient(135deg,#06b6d4,#2ee6a6)',pagos:'linear-gradient(135deg,#ff7a18,#ffd84d)',salud:'linear-gradient(135deg,#ff3d8f,#ff9bc9)',asistente:'linear-gradient(135deg,#8b5cf6,#d946ef)',ajustes:'linear-gradient(135deg,#475569,#94a3b8)'};
 
@@ -1167,7 +1182,7 @@ function Asistente(){const v=S.v,st=v.st,L={idle:'Toca el círculo y habla',list
  return`${Banner('asistente','Asistente','Háblale como a una persona: anota gastos, agenda, pagos y arma tus metas de ahorro')}
  <div class="asg"><div class="card pad orbc"><button class="orb" id="orb" data-st="${st}" data-a="orb" aria-label="${st==='idle'?'Empezar a hablar':'Detener'}" title="${st==='idle'?'Empezar a hablar':'Detener'}"><span class="r1"></span><span class="r2"></span><span class="r3"></span>${ic('mic')}</button>
   <div class="vstat" id="vstat">${L[st]}</div><div class="vtr" id="vtr">${esc(v.interim||'')}</div>
-  <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap"><button class="chip sg" data-a="v-speak">🔊 Voz: ${v.speak?'Sí':'No'}</button><button class="chip sg" data-a="v-cont">🔁 Conversación continua: ${v.cont?'Sí':'No'}</button></div>
+  <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap"><button class="chip sg" data-a="v-speak">🔊 Voz: ${v.speak?'Sí':'No'}</button><button class="chip sg" data-a="v-cont">🔁 Conversación continua: ${v.cont?'Sí':'No'}</button><button class="chip sg" data-a="v-test">🔈 Probar sonido</button></div><div class="sub" id="vdbg" style="text-align:center;font-size:12px;margin-top:6px">${esc(v.dbg||'')}</div>
   <div class="row" style="justify-content:center;gap:8px;margin-top:6px"><button class="chip sg" data-a="teach">🧠 Enseñarle una categoría</button></div><div class="sub" style="font-size:12.5px;text-align:center">También puedes decirle: «Renzo Costa SAC es Ropa».</div>
   ${SR?'':'<div class="sub" style="font-size:13px">Este navegador no escucha por voz. Usa Chrome o Edge, o escribe abajo.</div>'}
   ${aiOn()?'':`<div class="sub" style="font-size:13px">Inicia sesión con una cuenta activa para conversar con total libertad.</div>`}</div>
@@ -1380,6 +1395,7 @@ const A={
  'orb'(){if(S.v.on||S.v.st!=='idle'){vstop();return}S.v.on=true;S.v.idle=0;vlisten()},
  'v-speak'(){S.v.speak=!S.v.speak;if(!S.v.speak){try{speechSynthesis.cancel()}catch(e){}try{AU.onended=null;AU.pause()}catch(e){}}draw()},
  'v-cont'(){S.v.cont=!S.v.cont;draw()},
+ 'v-test'(){vtest()},
  'undo'(t){const f=S.undo[t.dataset.u];if(!f)return;f();save();delete S.undo[t.dataset.u];const m=S.chat.find(x=>x.u===t.dataset.u);if(m){m.h=m.h.replace('✓','↩ Deshecho:');m.u=''}draw();toast('Deshecho')},
  'chat-ex'(t){ask(t.dataset.v)},
  '_chat-ex'(t){const i=$('[data-f=chat] input');if(i){i.value=t.dataset.v;i.focus()}},
