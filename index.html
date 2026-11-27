@@ -1163,14 +1163,14 @@ function PushCard(){if(!SES)return'';const pf=(D.notify&&D.notify.pf)||{},ck=k=>
  <label class="row" style="gap:10px;padding:6px 0;cursor:pointer"><input type="checkbox" data-a="av-names" ${D.notify&&D.notify.medNames?'checked':''}><span style="flex:1;font-size:14px">Mostrar el nombre de la medicina en el aviso</span></label></div>`}
 function Ajustes(){const con=ST.url&&ST.key,info=D.scanInfo;
  return`${Banner('ajustes','Ajustes','Conexión, seguridad y respaldo',``)}
- <div class="sh">Correos del banco (automático)</div>
+ ${(!PROF||PROF.role==='admin')?`<div class="sh">Correos del banco (automático)</div>
  <div class="card pad"><div class="row" style="margin-bottom:10px"><b style="flex:1">Conector de Google (gratis)</b><span class="chip ${con?'ok':''}">${con?'Conectado':'Sin conectar'}</span></div>
  <p class="sub" style="margin-bottom:12px">Lee solo correos de BCP, BBVA y Yape y los registra como gastos, incluso con Vertex cerrada. También guarda tus datos en tu Google Drive para que los veas en cualquier equipo.</p>
  <div class="fg"><label class="f">URL de la aplicación web (Apps Script)</label><input class="inp" data-in="url" value="${esc(ST.url)}" placeholder="https://script.google.com/macros/s/…/exec"></div>
  <div class="fg"><label class="f">Clave del conector (la inventas tú)</label><input class="inp" type="password" data-in="key" value="${esc(ST.key)}" placeholder="Una clave larga"></div>
  <div class="row"><button class="btn p" data-a="con-save">Guardar y probar</button><button class="btn s" data-a="con-scan" ${con?'':'disabled'}>Buscar correos ahora</button><button class="btn g" data-a="con-sync" ${con?'':'disabled'}>Sincronizar</button></div>
  ${info?`<div class="sub" style="margin-top:12px;font-size:13px">Última búsqueda: ${new Date(info.at).toLocaleString('es-PE')} · ${info.nuevos} nuevo(s)${info.otraMoneda?' · '+info.otraMoneda+' en otra moneda (no sumados)':''}${info.automatico?' · automática':''}</div>`:''}
- <div class="row" style="margin-top:12px"><button class="btn g sm" data-a="show-gs">Ver código del conector y guía</button></div></div>
+ <div class="row" style="margin-top:12px"><button class="btn g sm" data-a="show-gs">Ver código del conector y guía</button></div></div>`:''}
  ${PushCard()}<div class="sh">${SES?"Avisos por ntfy (opcional)":"Avisos en tu celular"}</div>
  <div class="card pad">${(()=>{const n=D.notify||{},on=n.on&&n.topic;
  if(!on)return`<div class="row" style="margin-bottom:8px"><b style="flex:1">Avisos aunque Vertex esté cerrada</b><span class="chip">Apagado</span></div><p class="sub" style="margin-bottom:14px">Te avisamos en el celular de cada pago, tarjeta, evento y toma de medicina, con sonido, abierta o cerrada. Usa ntfy, una app gratis.</p><button class="btn p" data-a="av-on" ${con?'':'disabled'}>Activar avisos</button>${con?'':`<p class="sub" style="margin-top:10px;font-size:13px">Primero conecta el conector de Google (arriba).</p>`}`;
