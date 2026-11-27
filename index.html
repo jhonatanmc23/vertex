@@ -334,6 +334,18 @@ ol.st li::before{content:counter(s);flex:none;width:25px;height:25px;border-radi
  .btn{min-height:44px}.ib{min-width:40px;min-height:40px}
 }
 @media(max-width:860px){html,body{overflow-x:hidden;max-width:100vw}.bottom{box-sizing:border-box;width:100%;padding-left:2px;padding-right:2px}.bottom button{min-width:0;padding:7px 0;font-size:9.5px;letter-spacing:-.2px}}@media(max-width:400px){.bottom button{font-size:9px;letter-spacing:-.3px}}
+.ob{min-height:100vh;display:flex;justify-content:center;padding:16px 14px calc(22px + env(safe-area-inset-bottom))}
+.obw{width:min(560px,100%);display:flex;flex-direction:column;gap:14px}
+.obt{display:flex;align-items:center;gap:12px}.obp{flex:1;height:8px;border-radius:99px;background:var(--sf2);border:1px solid var(--ln);overflow:hidden}.obp i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:99px;transition:width .35s}.obn{font-size:12px;font-weight:700;color:var(--mu)}
+.obc{padding:22px 20px}.obc h2{font-size:24px;margin:6px 0 8px}.obe{font-size:44px;line-height:1}
+.obf{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}.obf .btn.p{flex:1;min-width:140px}
+.obx{align-self:center;color:var(--mu);font-size:13px;text-decoration:underline;padding:6px}
+.obg{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 6px}
+.obr{display:flex;align-items:center;gap:10px;margin-bottom:8px}.obr span{flex:1;font-size:14.5px;min-width:0}.obr .inp{width:104px;text-align:right}
+.obl{display:flex;flex-direction:column;gap:8px;margin-top:12px}.obi{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--sf2);border:1px solid var(--ln);font-size:14px}.obi small{color:var(--mu)}
+.obc2{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.obc2 .chip{cursor:pointer}
+.obc .fg{margin-top:10px}.obc .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.obf{position:sticky;bottom:0;padding:12px 0 calc(6px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 55%,transparent);z-index:5}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1183,7 +1195,7 @@ function Ajustes(){const con=ST.url&&ST.key,info=D.scanInfo;
  <label class="row" style="margin-top:14px;gap:10px;cursor:pointer"><input type="checkbox" data-a="av-names" ${n.medNames?'checked':''}> <span class="sub" style="font-size:13px">Mostrar el nombre de la medicina en el aviso (pasa por el servidor de ntfy)</span></label>
  <p class="sub" style="margin-top:12px;font-size:12.5px">Avisamos: cada gasto nuevo que llega por correo (BCP, BBVA, Yape); pagos 3 días, 1 día y el día; tarjetas 3 días y el día; eventos la noche anterior y 30 min antes; y cada toma a su hora. Revisa cada 5 minutos.</p>`})()}</div>
  <div class="grid g2" style="align-items:start"><div><div class="sh">Categorías que aprendí</div><div class="card pad"><p class="sub" style="margin-bottom:10px">Cuando registras o corriges un gasto, recuerdo en qué categoría va. Aquí puedes revisarlas.</p>${Object.keys(D.learn||{}).length?`<div style="display:flex;flex-wrap:wrap;gap:8px">${Object.entries(D.learn).map(([k,v])=>`<span class="chip br" style="gap:6px">${esc(k)} → ${v} <button class="ib" style="width:22px;height:22px" data-a="learn-del" data-k="${esc(k)}" aria-label="Olvidar ${esc(k)}">${ic('x')}</button></span>`).join('')}</div>`:'<div class="sub">Aún no he aprendido nada. Dile al Asistente "almuerzo es alimentación".</div>'}<div class="row" style="margin-top:12px"><button class="btn s sm" data-a="learn-add">${ic('plus')} Agregar regla</button></div></div>
- <div class="sh">Cuenta y seguridad</div><div class="card pad"><div class="row" style="flex-wrap:wrap"><div style="flex:1 1 200px"><b>${esc(PROF?PROF.email:(ST.user||'—'))}</b><div class="sub" style="font-size:13px">${PROF?stOf(PROF)[0]+' · tus datos se guardan en la nube y se sincronizan entre tus dispositivos.':''} Se pide la contraseña al abrir y tras 5 minutos sin usar.</div></div><button class="btn s" data-a="chg-pass">Cambiar contraseña</button><button class="btn g" data-a="logout">${ic('lock')} Cerrar sesión</button>${PROF&&PROF.role==='admin'?'<button class="btn p" data-a="go-admin">👑 Administrar usuarios</button>':''}</div></div>
+ <div class="sh">Cuenta y seguridad</div><div class="card pad"><div class="row" style="flex-wrap:wrap"><div style="flex:1 1 200px"><b>${esc(PROF?PROF.email:(ST.user||'—'))}</b><div class="sub" style="font-size:13px">${PROF?stOf(PROF)[0]+' · tus datos se guardan en la nube y se sincronizan entre tus dispositivos.':''} Se pide la contraseña al abrir y tras 5 minutos sin usar.</div></div><button class="btn s" data-a="chg-pass">Cambiar contraseña</button><button class="btn s" data-a="ob-start">Ver guía de inicio</button><button class="btn g" data-a="logout">${ic('lock')} Cerrar sesión</button>${PROF&&PROF.role==='admin'?'<button class="btn p" data-a="go-admin">👑 Administrar usuarios</button>':''}</div></div>
  <div class="sh" style="margin-top:18px">Apariencia</div><div class="card pad"><div class="seg" style="margin:0">${[['noche','🌙 Noche'],['violeta','💜 Violeta']].map(([a,b])=>`<button class="${ST.theme===a?'on':''}" data-a="theme" data-v="${a}">${b}</button>`).join('')}</div></div></div>
  <div><div class="sh">Asistente con IA</div>${SES&&PROF&&accessOk()?'<div class="card pad"><div class="row"><b style="flex:1">Incluido en tu suscripción</b><span class="chip ok">Listo</span></div><p class="sub" style="margin-top:8px;font-size:13.5px">El asistente con IA ya funciona, sin que configures nada. Háblale o escríbele desde la pestaña IA.</p></div>':`<div class="card pad"><div class="fg"><label class="f">Tu clave de Anthropic (empieza con sk-ant-)</label><input class="inp" type="password" data-in="ai" value="${esc(ST.ai)}" placeholder="sk-ant-…"></div><div class="row"><button class="btn p" data-a="ai-save">Guardar</button></div><p class="sub" style="margin-top:10px;font-size:13px">Se guarda solo en este navegador. Costo muy bajo: unos US$ 0.10 por millón de entrada y US$ 0.50 por millón de salida.</p></div>`}
 <div class="sh" style="margin-top:18px">Respaldo</div><div class="card pad"><div class="row"><button class="btn s" data-a="exp">Descargar respaldo</button><label class="btn g" style="cursor:pointer">Restaurar respaldo<input type="file" accept=".json" data-f2="imp" hidden></label><button class="btn s" data-a="demo-on">Cargar ejemplos</button><button class="btn d" data-a="wipe">Borrar todo</button></div></div></div></div>
@@ -1235,6 +1247,7 @@ async function enter(){await loadProfile();if(!PROF)throw new Error('No se encon
  ST.user=PROF.name||PROF.email;saveCfg();S.blocked=!accessOk();pushRefresh();
  if(!S.blocked){try{await cloudPull()}catch(e){console.warn(e)}}
  if(!S.blocked){await gmSt();await gmPull();try{const q=new URLSearchParams(location.search).get('gmail');if(q){history.replaceState(null,'',location.pathname);setTimeout(()=>toast(q==='ok'?'Gmail conectado ✓ Ya estamos buscando tus gastos':q==='cancelado'?'No se conectó Gmail':'No se pudo conectar Gmail. Inténtalo de nuevo'),600);if(q==='ok')gmPull()}}catch(e){}}
+ maybeOnboard();
  try{localStorage.setItem('vertex.data',JSON.stringify(D))}catch(e){}}
 async function doAuth(f){const mode=S.lm||'in',email=(f.email.value||'').trim().toLowerCase(),pass=f.pass?f.pass.value:'';S.lockUser=email;S.lockMsg='';S.lockErr='';
  const bt=f.querySelector('.lbtn');if(bt){bt.disabled=true;bt.textContent='Un momento…'}
@@ -1291,6 +1304,7 @@ const Intro=()=>`<div class="intro" id="intro"><div class="ring"></div><div clas
 function draw(soft){if((S.tab!=='asistente'||S.locked)&&(S.v.on||S.v.st!=='idle'))vstop();applyTheme();const r=$('#root');const cur=document.getElementById('intro'),intro=!INTRO?'':cur?cur.outerHTML:Intro();
  if(S.locked){r.innerHTML=Lock()+intro;return}
  if(S.blocked){r.innerHTML=Blocked();return}
+ if(S.ob){r.innerHTML=Onboard()+intro;return}
  if(soft&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
  const sc=window.scrollY;r.innerHTML=Shell()+intro;nameIcons(r);if(soft)scrollTo(0,sc);const c=$('#chat');if(c)c.scrollTop=c.scrollHeight}
 function nameIcons(r){const M={del:'Eliminar',edit:'Editar',mclose2:'Cerrar',shop:'Quitar',mon:'Cambiar mes'};
@@ -1381,6 +1395,18 @@ const A={
  async 'gm-conn'(){try{toast('Abriendo Google…');const j=await gmCall({action:'start'});location.href=j.url}catch(e){toast(e.message)}},
  async 'gm-scan'(){try{toast('Buscando correos…');const j=await gmCall({action:'scan'});if(j.ok===false)throw new Error(j.error);const n=await gmPull();await gmSt();toast(n?`Listo: ${n} gasto(s) nuevo(s)`:'Listo: no hay gastos nuevos'+(j.otraMoneda?` (${j.otraMoneda} en otra moneda)`:''));draw()}catch(e){toast(e.message)}},
  async 'gm-off'(){if(!confirm('¿Desconectar tu Gmail? Los gastos ya anotados se conservan.'))return;try{await gmCall({action:'disconnect'});S.gm={connected:false};toast('Gmail desconectado');draw()}catch(e){toast(e.message)}},
+ 'ob-next'(){const k=OB_STEPS[S.ob.step];if(k==='pagos')obAddPay();if(k==='salud')obAddMed();if(k==='ingresos'&&!(+S.ob.f.inc>0)&&S.ob.f.inc){toast('Escribe un monto válido');return}if(S.ob.step<OB_STEPS.length-1)S.ob.step++;draw();scrollTo(0,0)},
+ 'ob-back'(){if(S.ob.step>0)S.ob.step--;draw();scrollTo(0,0)},
+ 'ob-skip'(){obSkipClear(OB_STEPS[S.ob.step]);S.ob.step++;draw();scrollTo(0,0)},
+ 'ob-skipall'(){if(!confirm('¿Omitir la guía? Podrás completar todo después desde cada sección.'))return;if(D.demo)D=newData();D.demo=false;D.onboarded=true;D.updated=Date.now();save();obClose()},
+ 'ob-sug'(){obSug();draw()},
+ 'ob-chip'(t){S.ob.f[t.dataset.k]=t.dataset.v;draw()},
+ 'ob-add-pay'(){if(!obAddPay()){toast('Escribe el nombre y el monto');return}draw()},
+ 'ob-add-med'(){if(!obAddMed()){toast('Escribe el nombre del medicamento');return}draw()},
+ 'ob-rm'(t){S.ob[t.dataset.t].splice(+t.dataset.i,1);draw()},
+ 'ob-finish'(){obApply();obClose();toast('¡Listo! Ya puedes usar Vertex ✓')},
+ async 'ob-gmail'(){obApply();S.ob=null;try{toast('Abriendo Google…');const j=await gmCall({action:'start'});location.href=j.url}catch(e){toast(e.message);S.tab='inicio';draw()}},
+ 'ob-start'(){S.ob=obNew();S.tab='inicio';draw()},
  'adm-new'(){form('Crear usuario',[{n:'name',l:'Nombre',ph:'Nombre del cliente'},{n:'email',l:'Correo',t:'email',req:1},{n:'pw',l:'Contraseña (mín. 6 caracteres)',req:1,ph:'La que le vas a entregar'},{n:'days',l:'Días de acceso (0 = sin activar)',t:'number',v:30,half:1},{n:'role',l:'Tipo',t:'select',o:[['user','Cliente'],['admin','Administrador']],v:'user',half:1},{n:'note',l:'Nota (pago, teléfono…)'}],async o=>{try{await admCall({action:'create',email:o.email,name:o.name,password:o.pw,days:+o.days||0,role:o.role,note:o.note});toast('Usuario creado ✓ Entrégale correo y clave');await loadUsers();draw()}catch(e){toast(e.message)}},'Crear')},
  'adm-pass'(t){const u=(S.users||[]).find(x=>x.id===t.dataset.id);if(!u)return;form('Nueva clave para '+u.email,[{n:'pw',l:'Nueva contraseña (mín. 6 caracteres)',req:1}],async o=>{try{await admCall({action:'setpass',id:u.id,password:o.pw});toast('Clave cambiada ✓')}catch(e){toast(e.message)}},'Cambiar')},
  async 'adm-role'(t){const u=(S.users||[]).find(x=>x.id===t.dataset.id);if(!u)return;const to=u.role==='admin'?'user':'admin';if(!confirm((to==='admin'?'¿Dar permisos de administrador a ':'¿Quitar permisos de administrador a ')+u.email+'?'))return;try{await admCall({action:'setrole',id:u.id,role:to});toast('Rol actualizado ✓');await loadUsers();draw()}catch(e){toast(e.message)}},
@@ -1412,8 +1438,52 @@ const A={
  'demo-on'(){if(confirm('Se reemplazarán tus datos por datos de ejemplo. ¿Continuar?')){D=demoData();save();draw();toast('Ejemplos cargados')}},
  wipe(){if(confirm('¿Borrar todos tus datos de este navegador? No se puede deshacer.')){D=newData();save();draw();toast('Datos borrados')}}
 };
+/* ===== Guía de inicio (solo la primera vez) ===== */
+const OB_STEPS=['hola','ingresos','presupuesto','meta','agenda','pagos','salud','ia','gmail','fin'];
+const OB_FIELDS={ingresos:['inc'],meta:['gn','gt','gs','gm'],agenda:['et','ed','eh'],pagos:['pn','pa','pd'],salud:['mn','md','mh','mf']};
+const obNew=()=>({step:0,f:{pd:'1',mh:'08:00',mf:'diaria',ed:today()},pays:[],meds:[],bud:{}});
+function obHas(){return !D.demo&&!!(Object.values(D.income||{}).some(v=>v>0)||(D.expenses||[]).length||(D.payments||[]).length||(D.meds||[]).length||(D.goals||[]).length||(D.events||[]).length)}
+function maybeOnboard(){if(!SES||S.blocked||D.onboarded)return;if(obHas()){D.onboarded=true;save();return}S.ob=obNew()}
+const obIn=(k,l,t,ph,hf)=>`<div class="fg"><label class="f">${l}</label><input class="inp" data-ob="${k}" type="${t||'text'}" ${t==='number'?'inputmode="decimal" step="0.01" min="0"':''} value="${esc(S.ob.f[k]??'')}" placeholder="${esc(ph||'')}"></div>`;
+const obSel=(k,l,o)=>`<div class="fg"><label class="f">${l}</label><select class="inp" data-ob="${k}">${o.map(a=>{a=Array.isArray(a)?a:[a,a];return`<option value="${esc(a[0])}" ${String(S.ob.f[k]??'')===String(a[0])?'selected':''}>${esc(a[1])}</option>`}).join('')}</select></div>`;
+function obSug(){const inc=+S.ob.f.inc||0;const base=CATS.reduce((a,c)=>a+c.b,0),sc=inc>0?Math.min(3,inc*0.85/base):1;S.ob.bud={};CATS.forEach(c=>{S.ob.bud[c.n]=Math.max(10,Math.round(c.b*sc/10)*10)})}
+function obAddPay(){const f=S.ob.f,a=+f.pa;if(!(f.pn||'').trim()||!(a>0))return false;S.ob.pays.push({name:f.pn.trim(),amount:a,day:+f.pd||1});f.pn='';f.pa='';return true}
+function obAddMed(){const f=S.ob.f;if(!(f.mn||'').trim())return false;S.ob.meds.push({name:f.mn.trim(),dose:(f.md||'').trim(),time:f.mh||'08:00',freq:f.mf||'diaria'});f.mn='';f.md='';return true}
+function obList(arr,t,fmt){return arr.length?`<div class="obl">${arr.map((x,i)=>`<div class="obi"><span>${fmt(x)}</span><button class="ib" data-a="ob-rm" data-t="${t}" data-i="${i}" aria-label="Quitar">✕</button></div>`).join('')}</div>`:''}
+function obBody(){const o=S.ob,k=OB_STEPS[o.step],f=o.f,nom=esc(((PROF&&PROF.name)||'').split(' ')[0]);
+ if(k==='hola')return`<div class="obe">👋</div><h2>${nom?`¡Hola, ${nom}!`:'¡Bienvenido a Vertex!'}</h2><p class="sub">Vamos a dejar todo listo en 2 minutos: tus ingresos, tus gastos por categoría, una meta, tu agenda, tus pagos y tu salud. Después, Vertex te avisa y te ayuda a ahorrar.</p><p class="sub" style="margin-top:10px">Puedes <b>omitir cualquier paso</b> y completarlo después. Esta guía solo aparece una vez.</p>`;
+ if(k==='ingresos')return`<div class="obe">💰</div><h2>¿Cuánto ganas al mes?</h2><p class="sub">Con esto calculamos cuánto te sobra y cuánto puedes ahorrar. Pon un promedio si cambia cada mes.</p>${obIn('inc','Ingreso mensual (S/)','number','Ej. 3500')}`;
+ if(k==='presupuesto'){const row=c=>`<div class="obr"><span>${c.e} ${esc(c.n)}</span><input class="inp" data-ob="b:${esc(c.n)}" type="number" inputmode="decimal" min="0" value="${esc(o.bud[c.n]??'')}" placeholder="0"></div>`;
+  const food=CATS.filter(c=>c.n==='Almuerzo'||c.n==='Restaurante y delivery'),rest=CATS.filter(c=>!food.includes(c));
+  return`<div class="obe">🍽️</div><h2>¿Cuánto gastarás al mes?</h2><p class="sub">Pon un tope por categoría. Te avisamos cuando te acerques al límite.</p><button class="btn s sm" data-a="ob-sug" style="margin:4px 0 12px">✨ Sugerir según mis ingresos</button><div class="obg">Comida</div>${food.map(row).join('')}<div class="obg">Otros gastos</div>${rest.map(row).join('')}`}
+ if(k==='meta')return`<div class="obe">🎯</div><h2>¿Qué meta quieres lograr?</h2><p class="sub">Una laptop, un viaje, un fondo de emergencia… Te digo en cuánto tiempo la logras.</p>${obIn('gn','¿Qué quieres lograr?','text','Laptop, viaje, carro…')}<div class="two">${obIn('gt','Monto (S/)','number','2500')}${obIn('gs','Ya ahorrado (S/)','number','0')}</div>${obIn('gm','Puedo ahorrar al mes (S/)','number','200')}`;
+ if(k==='agenda')return`<div class="obe">📅</div><h2>Tu agenda</h2><p class="sub">Anota un compromiso próximo. Te avisamos el día antes y una hora antes.</p>${obIn('et','¿Qué tienes pendiente?','text','Cita médica, reunión…')}<div class="two">${obIn('ed','Fecha','date')}${obIn('eh','Hora','time')}</div>`;
+ if(k==='pagos')return`<div class="obe">💳</div><h2>Tus pagos</h2><p class="sub">Servicios y suscripciones que pagas cada mes. Te avisamos 3 días antes para que no pagues mora.</p><div class="obc2">${['Luz','Agua','Internet','Celular','Netflix'].map(n=>`<button class="chip" data-a="ob-chip" data-k="pn" data-v="${n}">${n}</button>`).join('')}</div>${obIn('pn','Nombre','text','Luz, Netflix…')}<div class="two">${obIn('pa','Monto (S/)','number','85')}${obSel('pd','Vence el día',dayOpts)}</div><button class="btn s sm" data-a="ob-add-pay">+ Agregar este pago</button>${obList(o.pays,'pays',x=>`${esc(x.name)} · ${money(x.amount)} · día ${x.day}`)}`;
+ if(k==='salud')return`<div class="obe">💊</div><h2>Tu salud</h2><p class="sub">Si tomas medicamentos, regístralos y te recordamos cada toma. Es solo un recordatorio, no reemplaza a tu médico.</p>${obIn('mn','Medicamento','text','Omeprazol, vitamina D…')}<div class="two">${obIn('md','Dosis','text','1 tableta')}${obIn('mh','Primera toma','time')}</div>${obSel('mf','Frecuencia',Object.entries(FREQ).map(([a,b])=>[a,b[0]]))}<button class="btn s sm" data-a="ob-add-med">+ Agregar este medicamento</button>${obList(o.meds,'meds',x=>`${esc(x.name)}${x.dose?' · '+esc(x.dose):''} · ${esc(x.time)}`)}`;
+ if(k==='ia')return`<div class="obe">✨</div><h2>Tu asistente con IA</h2><p class="sub">Escríbele o háblale como a una persona, desde la pestaña <b>IA</b>. Ya viene incluido en tu suscripción.</p><div class="obl"><div class="obi"><span>“Gasté 25 soles en almuerzo”<br><small>Lo anota en su categoría.</small></span></div><div class="obi"><span>“¿Cuánto llevo gastado este mes?”<br><small>Te resume tus gastos.</small></span></div><div class="obi"><span>“Recuérdame el viernes pagar la luz”<br><small>Crea el pago o el evento.</small></span></div><div class="obi"><span>“Quiero ahorrar para una laptop”<br><small>Calcula cuánto y en cuánto tiempo.</small></span></div></div>`;
+ if(k==='gmail'){const ok=S.gm&&S.gm.connected;return`<div class="obe">📧</div><h2>Gastos desde tu Gmail</h2><p class="sub">Conecta tu Gmail y Vertex anota solo los gastos de los correos de <b>BCP, BBVA y Yape</b>, sin que tengas que escribir nada. Solo lee esos correos; no envía ni borra nada. Puedes desconectarte cuando quieras.</p>${ok?`<div class="alert info"><div>✓ Gmail conectado (${esc(S.gm.email||'')})</div></div>`:`<p class="sub" style="margin-top:10px;font-size:13px">Verás un aviso de Google: <b>"Google no verificó esta app"</b>. Toca <b>Avanzado</b> → <b>Ir a Vertex (no seguro)</b> y acepta el permiso de solo lectura.</p>`}`}
+ return`<div class="obe">🎉</div><h2>¡Todo listo!</h2><p class="sub">Ya puedes empezar. Cuando registres un gasto, tus topes y tus metas se actualizan solos.</p><p class="sub" style="margin-top:10px">Para recibir avisos de medicinas, pagos y eventos en tu celular, ve a <b>Ajustes → Notificaciones</b>. Esta guía la puedes volver a ver en <b>Ajustes</b>.</p>`}
+function Onboard(){const o=S.ob,n=OB_STEPS.length,k=OB_STEPS[o.step],first=o.step===0,last=k==='fin',pct=Math.round(o.step/(n-1)*100);
+ const skip=!first&&!last?`<button class="btn g" data-a="ob-skip">Omitir</button>`:'';
+ const next=last?`<button class="btn p" data-a="ob-finish">Entrar a Vertex</button>`:k==='gmail'&&!(S.gm&&S.gm.connected)?`<button class="btn p" data-a="ob-gmail">Conectar con Google</button>`:`<button class="btn p" data-a="ob-next">${first?'Empezar':'Siguiente'}</button>`;
+ return`<div class="ob"><div class="obw"><div class="obt"><div class="obp"><i style="width:${pct}%"></i></div><span class="obn">${o.step+1}/${n}</span></div>
+ <div class="card pad obc">${obBody()}</div>
+ <div class="obf">${first||last?'':`<button class="btn g" data-a="ob-back">Atrás</button>`}${skip}${k==='gmail'&&!(S.gm&&S.gm.connected)?`<button class="btn g" data-a="ob-next">Más tarde</button>`:''}${next}</div>
+ ${last?'':`<button class="obx" data-a="ob-skipall">Omitir toda la guía</button>`}</div></div>`}
+function obApply(){const o=S.ob,f=o.f;if(D.demo||!D.budgets)D=newData();D.demo=false;
+ const inc=+f.inc;if(inc>0)D.income[ym(today())]=inc;
+ Object.entries(o.bud).forEach(([c,v])=>{if(v!==''&&v!=null&&!isNaN(+v))D.budgets[c]=+v});
+ if((f.gn||'').trim()&&+f.gt>0){const g=goalFrom({name:f.gn,target:f.gt,saved:f.gs,monthly:f.gm},{id:uid()});D.goals.push(g)}
+ if((f.et||'').trim()&&f.ed)D.events.push(evFrom({title:f.et,date:f.ed,time:f.eh||'',tipo:'Personal',urgent:'no',notes:''}));
+ obAddPay();obAddMed();
+ o.pays.forEach(p=>D.payments.push({id:uid(),name:p.name,amount:p.amount,day:p.day,paid:{}}));
+ o.meds.forEach((m,i)=>D.meds.push({id:uid(),name:m.name,dose:m.dose,time:m.time,freq:m.freq,shape:'pastilla',color:COLORS[i%COLORS.length],taken:{}}));
+ D.onboarded=true;D.updated=Date.now();save()}
+function obClose(){S.ob=null;S.tab='inicio';draw()}
+function obSkipClear(k){(OB_FIELDS[k]||[]).forEach(x=>{S.ob.f[x]=''});if(k==='presupuesto')S.ob.bud={};if(k==='pagos')S.ob.pays=[];if(k==='salud')S.ob.meds=[];if(k==='ingresos'||k==='pagos')S.ob.f.pd='1';if(k==='agenda')S.ob.f.ed=today();if(k==='salud'){S.ob.f.mh='08:00';S.ob.f.mf='diaria'}}
+
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-a]');if(!t)return;const f=A[t.dataset.a];if(f){S.lastActive=Date.now();f(t,e)}});
-document.addEventListener('input',e=>{const t=e.target,i=t.dataset.in;if(!i)return;
+document.addEventListener('input',e=>{const t=e.target,ob=t.dataset&&t.dataset.ob;if(ob&&S.ob){if(ob.startsWith('b:'))S.ob.bud[ob.slice(2)]=t.value;else S.ob.f[ob]=t.value;return}const i=t.dataset.in;if(!i)return;
  if(i==='q'){S.q=t.value;const p=t.selectionStart;draw();const n=$('[data-in=q]');if(n){n.focus();n.setSelectionRange(p,p)}}
  if(i==='bud'){D.budgets[t.dataset.c]=+t.value||0;save()}
  if(i==='url')ST.url=t.value;if(i==='key')ST.key=t.value;if(i==='ai')ST.ai=t.value});
